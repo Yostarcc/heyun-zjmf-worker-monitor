@@ -16,7 +16,11 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.match(html, /监控项/);
   assert.match(html, /事件日志/);
   assert.match(html, /新建监控项/);
+  assert.match(html, /通知渠道/);
+  assert.match(html, /新建通知渠道/);
   assert.match(html, /编辑通知渠道/);
+  assert.match(html, /id="notifyRows"/);
+  assert.match(html, /id="notifyModal"/);
   assert.match(html, /在状态页显示/);
   assert.match(html, /魔方财务 API/);
   assert.match(html, /webhook_headers/);
@@ -40,4 +44,6 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.doesNotMatch(html, /服务器 IP|1\.2\.3\.4/);
   assert.doesNotMatch(html, /super-secret-admin-password/);
   assert.doesNotMatch(html, /删除功能暂未开放/);
+  assert.doesNotMatch(html, /定时重启|scheduled_reboot/);
+  assert.doesNotMatch(html, /维护策略|maintenanceView|data-tab="maintenance"/);
 });

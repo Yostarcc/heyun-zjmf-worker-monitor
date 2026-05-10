@@ -65,3 +65,40 @@ test('runMonitorOnce 将连续异常服务器推进到 down 并执行重启', as
   assert.equal(calls.some((c) => c.url.includes('/hard_reboot')), true);
   assert.equal(repo.events.some((event) => event.new_state === 'down'), true);
 });
+
+test('runMonitorOnce 忽略旧配置中的定时重启字段', async () => {
+  const repo = new FakeRepo({
+    settings: {
+      suspect_threshold: 2,
+      reboot_cooldown: 300,
+      recover_timeout: 300,
+      default_daily_reboot_limit: 3,
+      api_timeout: 60,
+      timezone: 'Asia/Shanghai',
+      check_interval: 300,
+    },
+    providers: {
+      heyun: { name: 'heyun', api_base_url: 'https://api.example/v1', jwt_token: 'jwt', jwt_expire_at: 9999 },
+    },
+    servers: [{ id: '4075', name: '测试机', provider: 'heyun', daily_reboot_limit: 3, scheduled_reboot: '04:00' }],
+    runtimes: { 4075: null },
+  });
+  const calls = [];
+  const fetcher = async (url, init) => {
+    calls.push({ url: String(url), init });
+    if (String(url).includes('/status')) return new Response(JSON.stringify({ data: { status: 'on' } }));
+    if (String(url).includes('/hard_reboot')) return new Response(JSON.stringify({ msg: '成功' }));
+    return new Response(JSON.stringify({ jwt: 'jwt' }));
+  };
+
+  const summary = await runMonitorOnce({
+    repo,
+    fetcher,
+    now: 1778356800,
+    today: '2026-05-10',
+    date: new Date('2026-05-09T20:00:00Z'),
+  });
+
+  assert.equal(summary.checked, 1);
+  assert.equal(calls.some((c) => c.url.includes('/hard_reboot')), false);
+});

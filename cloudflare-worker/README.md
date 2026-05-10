@@ -181,7 +181,6 @@ $body = @{
   check_method = "api_only"
   enabled = $true
   daily_reboot_limit = 3
-  scheduled_reboot = "04:00"
 } | ConvertTo-Json -Compress
 
 Invoke-RestMethod -Method Post -Uri "$base/api/admin/servers" `

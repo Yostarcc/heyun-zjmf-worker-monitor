@@ -65,6 +65,7 @@ class FakeStatement {
         ip: this.args[2],
         provider: this.args[3],
         enabled: this.args[5],
+        scheduled_reboot: this.args[7],
       });
       return {};
     }
@@ -208,6 +209,30 @@ test('管理后台保存脱敏服务器时保留原 IP', async () => {
 
   assert.equal(res.status, 200);
   assert.equal(testEnv.DB.data.serverWrites[0].ip, '203.0.113.10');
+});
+
+test('管理后台保存服务器时清空旧定时重启配置', async () => {
+  const testEnv = env();
+  const res = await handleRequest(
+    new Request('https://worker.example/api/admin/servers', {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer admin-password',
+        'content-type': 'application/json; charset=utf-8',
+      },
+      body: JSON.stringify({
+        id: '8564',
+        name: '主服务器',
+        provider: 'heyunidc',
+        enabled: true,
+        scheduled_reboot: '04:00',
+      }),
+    }),
+    testEnv,
+  );
+
+  assert.equal(res.status, 200);
+  assert.equal(testEnv.DB.data.serverWrites[0].scheduled_reboot, '');
 });
 
 test('管理后台删除监控项会删除配置和运行状态并写入日志', async () => {

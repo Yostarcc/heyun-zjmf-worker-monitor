@@ -76,30 +76,3 @@ export function applyRebootSuccess(runtime, now, today) {
     now,
   );
 }
-
-export function shouldRunScheduledReboot(runtime, server, settings, isoNow) {
-  if (!server.scheduled_reboot) return false;
-  const date = new Date(isoNow);
-  const [hour, minute = '0'] = server.scheduled_reboot.split(':');
-  const targetMinutes = Number(hour) * 60 + Number(minute);
-  if (!Number.isFinite(targetMinutes)) return false;
-  const nowMinutes = date.getHours() * 60 + date.getMinutes();
-  const tolerance = Math.max(1, Math.floor(settings.check_interval / 60));
-  const key = `${isoNow.slice(0, 10)}:${server.scheduled_reboot}`;
-  return Math.abs(nowMinutes - targetMinutes) <= tolerance && runtime.scheduled_reboot_date !== key;
-}
-
-export function scheduledRebootKey(server, dateKey) {
-  return `${dateKey}:${server.scheduled_reboot}`;
-}
-
-export function shouldRunScheduledRebootAt(runtime, server, settings, localParts) {
-  if (!server.scheduled_reboot) return false;
-  const [hour, minute = '0'] = server.scheduled_reboot.split(':');
-  const targetMinutes = Number(hour) * 60 + Number(minute);
-  if (!Number.isFinite(targetMinutes)) return false;
-  const nowMinutes = localParts.hour * 60 + localParts.minute;
-  const tolerance = Math.max(1, Math.floor(settings.check_interval / 60));
-  const key = scheduledRebootKey(server, localParts.dateKey);
-  return Math.abs(nowMinutes - targetMinutes) <= tolerance && runtime.scheduled_reboot_date !== key;
-}

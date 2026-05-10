@@ -1,7 +1,6 @@
 import { TRANSITION_LABELS } from './constants.js';
 import { Notifier } from './notifier.js';
-import { createRuntime, advanceState, shouldReboot, applyRebootStart, applyRebootSuccess, shouldRunScheduledRebootAt, scheduledRebootKey } from './state-machine.js';
-import { localDateParts } from './time.js';
+import { createRuntime, advanceState, shouldReboot, applyRebootStart, applyRebootSuccess } from './state-machine.js';
 import { ZjmfClient } from './zjmf-client.js';
 
 function transitionLabel(oldState, newState) {
@@ -30,10 +29,9 @@ async function checkApiHealth(client, server, runtime, now) {
   return { health: String(status).toLowerCase() === 'on', runtime: { ...runtime, last_status_value } };
 }
 
-export async function runMonitorOnce({ repo, fetcher = (input, init) => globalThis.fetch(input, init), now, today, date = new Date(now * 1000) }) {
+export async function runMonitorOnce({ repo, fetcher = (input, init) => globalThis.fetch(input, init), now, today }) {
   const settings = await repo.getSettings();
   const notifier = new Notifier(settings, fetcher);
-  const localParts = localDateParts(date, settings.timezone || 'Asia/Shanghai');
   const servers = await repo.listEnabledServers();
   let checked = 0;
 
@@ -57,16 +55,6 @@ export async function runMonitorOnce({ repo, fetcher = (input, init) => globalTh
       } else {
         nextRuntime = { ...rebooting, state: 'down', state_changed_at: now };
       }
-    }
-
-    if (shouldRunScheduledRebootAt(nextRuntime, server, settings, localParts)) {
-      const rebooting = applyRebootStart(nextRuntime, now);
-      await recordTransition(repo, notifier, server, nextRuntime.state, rebooting, now);
-      const success = await client.hardReboot(server.id, now);
-      nextRuntime = success
-        ? { ...applyRebootSuccess(rebooting, now, today), scheduled_reboot_date: scheduledRebootKey(server, localParts.dateKey) }
-        : { ...rebooting, state: 'down', state_changed_at: now };
-      await recordTransition(repo, notifier, server, rebooting.state, nextRuntime, now);
     }
 
     await repo.updateProvider(provider);

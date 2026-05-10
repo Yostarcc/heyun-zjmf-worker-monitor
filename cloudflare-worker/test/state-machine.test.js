@@ -6,7 +6,6 @@ import {
   createRuntime,
   shouldReboot,
   applyRebootSuccess,
-  shouldRunScheduledReboot,
 } from '../src/state-machine.js';
 
 test('异常达到阈值后从 healthy 推进到 down', () => {
@@ -78,16 +77,4 @@ test('跨日期重启会重置今日次数后再计数', () => {
   const next = applyRebootSuccess(runtime, 2000, '2026-05-10');
   assert.equal(next.reboot_count_today, 1);
   assert.equal(next.reboot_date, '2026-05-10');
-});
-
-test('定时重启只在目标分钟触发一次', () => {
-  const server = { scheduled_reboot: '04:00' };
-  const runtime = createRuntime({ scheduled_reboot_date: '' });
-  const settings = { check_interval: 300 };
-
-  assert.equal(shouldRunScheduledReboot(runtime, server, settings, '2026-05-10T04:03:00+08:00'), true);
-  assert.equal(
-    shouldRunScheduledReboot({ ...runtime, scheduled_reboot_date: '2026-05-10:04:00' }, server, settings, '2026-05-10T04:03:00+08:00'),
-    false,
-  );
 });

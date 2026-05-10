@@ -121,7 +121,7 @@ export class D1Repository {
       INSERT INTO servers (id,name,ip,provider,check_method,enabled,daily_reboot_limit,scheduled_reboot,created_at,updated_at)
       VALUES (?1,?2,?3,?4,?5,?6,?7,?8,?9,?9)
       ON CONFLICT(id) DO UPDATE SET name=excluded.name,ip=excluded.ip,provider=excluded.provider,check_method=excluded.check_method,enabled=excluded.enabled,daily_reboot_limit=excluded.daily_reboot_limit,scheduled_reboot=excluded.scheduled_reboot,updated_at=excluded.updated_at
-    `).bind(server.id, server.name, server.ip || '', server.provider, server.check_method || 'api_only', server.enabled === false ? 0 : 1, server.daily_reboot_limit || 0, server.scheduled_reboot || '', now).run();
+    `).bind(server.id, server.name, server.ip || '', server.provider, server.check_method || 'api_only', server.enabled === false ? 0 : 1, server.daily_reboot_limit || 0, '', now).run();
   }
 
   async deleteServer(id) {

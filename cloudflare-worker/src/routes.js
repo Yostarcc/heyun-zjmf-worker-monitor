@@ -1,5 +1,6 @@
 import { runMonitorOnce } from './monitor.js';
 import { D1Repository } from './repository.js';
+import { Notifier } from './notifier.js';
 import { renderAdminPage } from './admin-page.js';
 import { renderStatusPage } from './status-page.js';
 
@@ -92,6 +93,11 @@ export async function handleRequest(request, env) {
     return json(await runMonitorOnce({ repo, fetcher: (input, init) => fetch(input, init), now, today }));
   }
 
+  if (url.pathname === '/api/admin/notify/test' && request.method === 'POST') {
+    const notifier = new Notifier(await repo.getSettings(), (input, init) => fetch(input, init));
+    return json(await notifier.send('ZJMF 测试通知', '这是一条来自管理后台的测试通知。', 'info'));
+  }
+
   if (url.pathname === '/api/admin/providers' && request.method === 'POST') {
     const body = await readJson(request);
     if (!body?.name || !body?.api_base_url || !body?.api_account) {
@@ -112,6 +118,7 @@ export async function handleRequest(request, env) {
     const nextServer = {
       ...body,
       ip: Object.hasOwn(body, 'ip') ? body.ip : existing?.ip || '',
+      scheduled_reboot: '',
     };
     await repo.upsertServer(nextServer, Math.floor(Date.now() / 1000));
     return json({ ok: true });
