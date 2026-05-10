@@ -19,6 +19,8 @@ test('状态页渲染服务器状态并转义 HTML', () => {
 
   assert.match(html, /ZJMF 服务器监控/);
   assert.match(html, /--bg:#f8f4ea/);
+  assert.match(html, /管理面板/);
+  assert.match(html, /href="\/admin"/);
   assert.match(html, /运行正常/);
   assert.match(html, /&lt;script&gt;alert\(1\)&lt;\/script&gt;/);
   assert.doesNotMatch(html, /<script>alert/);

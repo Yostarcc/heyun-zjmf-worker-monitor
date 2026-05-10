@@ -68,6 +68,8 @@ export function renderStatusPage(servers) {
     *{box-sizing:border-box} body{margin:0;min-height:100vh;background:radial-gradient(circle at 15% 10%,#fff7df 0,transparent 32%),radial-gradient(circle at 85% 0,#e9f6f3 0,transparent 28%),linear-gradient(160deg,var(--bg),#fff 58%,#efe7d8);color:var(--ink);font-family:"Bahnschrift","Aptos Display","Trebuchet MS",sans-serif}
     body:before{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(23,32,51,.055) 1px,transparent 1px),linear-gradient(90deg,rgba(23,32,51,.055) 1px,transparent 1px);background-size:38px 38px;mask-image:linear-gradient(to bottom,#000,transparent 88%);pointer-events:none}
     main{position:relative;width:min(1120px,calc(100% - 36px));margin:0 auto;padding:54px 0}
+    .pageNav{display:flex;justify-content:flex-end;margin-bottom:22px}.adminLink{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(23,32,51,.16);background:#111827;color:#fff;text-decoration:none;border-radius:16px;padding:13px 18px;font-weight:800;box-shadow:0 16px 38px rgba(23,32,51,.16)}
+    .adminLink:before{content:"";width:8px;height:8px;border-radius:999px;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.18)}
     .hero{display:grid;grid-template-columns:1.4fr .8fr;gap:24px;align-items:end;margin-bottom:26px}
     .tag{display:inline-flex;gap:8px;align-items:center;color:var(--cyan);letter-spacing:.22em;font-size:12px;text-transform:uppercase}
     h1{font-size:clamp(36px,7vw,82px);line-height:.92;margin:14px 0 12px;letter-spacing:-.07em}
@@ -87,6 +89,7 @@ export function renderStatusPage(servers) {
 </head>
 <body>
   <main>
+    <nav class="pageNav"><a class="adminLink" href="/admin">管理面板</a></nav>
     <section class="hero">
       <div><span class="tag">ZJMF Monitor</span><h1>核云服务器<br>自动监控</h1><p class="lead">Cloudflare Worker 每 5 分钟检查魔方财务 API；发现异常后按状态机确认并执行硬重启。</p></div>
       <div class="summary"><div class="stat"><b>${servers.length}</b><span>监控项</span></div><div class="stat"><b>${healthy}</b><span>正常</span></div><div class="stat"><b>${problem}</b><span>异常/恢复中</span></div></div>
