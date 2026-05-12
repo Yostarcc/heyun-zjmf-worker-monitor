@@ -25,6 +25,13 @@ test('状态页渲染服务器状态并转义 HTML', () => {
   assert.match(html, /status-card/);
   assert.match(html, /近 30 天可用性/);
   assert.match(html, /最近 60 次探测/);
+  assert.match(html, /class="day-track"/);
+  assert.match(html, /aria-label="近 30 天每日可用性"/);
+  assert.equal((html.match(/class="day-segment/g) || []).length, 30);
+  assert.match(html, /100\.000% 可用率/);
+  assert.match(html, /不可用时长 0s/);
+  assert.match(html, /box-shadow:0 0 0 2px #fff/);
+  assert.match(html, /translateY\(-7px\)/);
   assert.match(html, /data-tip=/);
   assert.match(html, /aria-label="最近探测详情"/);
   assert.match(html, /tcp/);

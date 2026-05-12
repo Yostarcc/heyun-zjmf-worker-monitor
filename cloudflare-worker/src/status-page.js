@@ -12,6 +12,11 @@ function fmtTime(seconds) {
   return new Date(seconds * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
 }
 
+function fmtDate(seconds) {
+  if (!seconds) return '从未';
+  return new Date(seconds * 1000).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+}
+
 function stateLabel(state) {
   const labels = {
     healthy: '运行正常',
@@ -40,6 +45,17 @@ function checkMethod(server) {
 
 function availability(server) {
   return (server.state || 'unknown') === 'healthy' ? '100.000%' : '0.000%';
+}
+
+function daySegments(server, count = 30) {
+  const ok = (server.state || 'unknown') === 'healthy';
+  const base = Number(server.last_check_time || Math.floor(Date.now() / 1000));
+  return Array.from({ length: count }, (_, index) => {
+    const day = base - (count - 1 - index) * 86400;
+    const active = index === count - 1 ? ' active' : '';
+    const tip = escapeHtml(`${fmtDate(day)}\n● ${availability(server)} 可用率\n不可用时长 ${ok ? '0s' : '24h'}`);
+    return `<span class="day-segment ${ok ? 'ok' : 'bad'}${active}" data-tip="${tip}" tabindex="0"></span>`;
+  }).join('');
 }
 
 function bars(server, count = 60) {
@@ -71,7 +87,7 @@ function row(server) {
       <div class="badges"><span class="uptime">● ${availability(server)}</span><span class="state">${stateLabel(state)}</span></div>
     </div>
     <p class="caption">近 30 天可用性</p>
-    <div class="uptime-track"><span style="width:${availability(server)}"></span><b>${availability(server)}</b></div>
+    <div class="day-track" aria-label="近 30 天每日可用性">${daySegments(server)}</div>
     <p class="caption">最近 60 次探测</p>
     <div class="probe-bars" aria-label="最近探测详情">${bars(server)}</div>
     <div class="card-foot"><span>最快 ${stats.best}</span><span>平均 ${stats.avg}</span><span>最慢 ${stats.worst}</span><span>${fmtTime(server.last_check_time).slice(-5)}</span></div>
@@ -98,8 +114,9 @@ export function renderStatusPage(servers) {
     .hero{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:24px}.tag{color:#0b9f75;letter-spacing:.18em;font-size:12px;font-weight:900;text-transform:uppercase}h1{font-size:34px;margin:10px 0 6px;letter-spacing:-.05em}.lead{color:var(--muted);line-height:1.65;margin:0}.summary{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.stat{min-width:86px;padding:12px 14px;border:1px solid var(--line);background:#fff;border-radius:18px;box-shadow:0 14px 36px rgba(15,27,45,.07)}.stat b{display:block;font-size:24px}.stat span{color:var(--muted);font-size:12px}
     .service-title{font-size:28px;margin:22px 0 12px}.group-title{font-size:22px;margin:0 0 10px}.grid{display:grid;gap:16px}.status-card{border:1px solid #cfd9e8;background:linear-gradient(180deg,#fff,#f9fbff);box-shadow:0 22px 55px rgba(15,27,45,.10);border-radius:22px;padding:22px;animation:rise .45s ease both}.status-card--healthy{border-color:#b9e9d9}.status-card--down,.status-card--recovering,.status-card--rebooting{border-color:#ffc4cc}
     .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.name-row{display:flex;gap:14px;align-items:flex-start}.dot{width:11px;height:11px;border-radius:99px;background:var(--ok);margin-top:10px;box-shadow:0 0 0 5px rgba(16,201,143,.13)}.status-card--down .dot,.status-card--rebooting .dot{background:var(--bad);box-shadow:0 0 0 5px rgba(239,82,103,.13)}h3{margin:0;font-size:25px}.name-row p{margin:4px 0 0;color:#5f718c}.badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.uptime,.state{border:1px solid #b8ecd8;background:#ecfdf6;color:#047857;border-radius:999px;padding:5px 12px;font-size:14px}
-    .caption{color:var(--muted);margin:22px 0 10px}.uptime-track{position:relative;height:32px;border-radius:8px;background:var(--track);overflow:hidden}.uptime-track span{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,#34d399,#10c98f)}.uptime-track b{position:absolute;right:10px;top:7px;font-size:13px;color:#047857}
-    .probe-bars{height:34px;background:var(--track);border-radius:8px;padding:7px 6px;display:flex;gap:5px;align-items:end}.probe-bars span{position:relative;display:block;width:7px;border-radius:2px;outline:0}.probe-bars .ok{background:#10c98f}.probe-bars .bad{background:var(--bad)}.probe-bars span:hover:after,.probe-bars span:focus:after{content:attr(data-tip);position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:5;white-space:pre;min-width:180px;background:#fff;border:1px solid var(--line);box-shadow:0 18px 36px rgba(15,27,45,.16);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:13px}.probe-bars span:hover:before,.probe-bars span:focus:before{content:"";position:absolute;left:50%;bottom:24px;border:7px solid transparent;border-top-color:#fff;transform:translateX(-50%)}
+    .caption{color:var(--muted);margin:22px 0 10px}.day-track{height:32px;border-radius:8px;background:var(--track);padding:0 3px;display:flex;gap:2px;align-items:stretch;overflow:visible}.day-segment{position:relative;flex:1;border-radius:6px;background:#cdd8e7;outline:0;transition:transform .16s ease,box-shadow .16s ease}.day-segment.ok{background:linear-gradient(90deg,#34d399,#10c98f)}.day-segment.bad{background:var(--bad)}
+    .probe-bars{height:34px;background:var(--track);border-radius:8px;padding:7px 6px;display:flex;gap:5px;align-items:end}.probe-bars span{position:relative;display:block;width:7px;border-radius:2px;outline:0;transition:transform .16s ease,box-shadow .16s ease}.probe-bars .ok{background:#10c98f}.probe-bars .bad{background:var(--bad)}.day-segment.active,.day-segment:hover,.day-segment:focus,.probe-bars span.active,.probe-bars span:hover,.probe-bars span:focus{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(15,27,45,.20);transform:translateY(-7px);z-index:4}
+    .day-track span:hover:after,.day-track span:focus:after,.probe-bars span:hover:after,.probe-bars span:focus:after{content:attr(data-tip);position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:6;white-space:pre;min-width:180px;background:#fff;border:1px solid var(--line);box-shadow:0 18px 36px rgba(15,27,45,.16);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:13px}.day-track span:hover:before,.day-track span:focus:before,.probe-bars span:hover:before,.probe-bars span:focus:before{content:"";position:absolute;left:50%;bottom:24px;border:7px solid transparent;border-top-color:#fff;transform:translateX(-50%);z-index:7}
     .card-foot{display:flex;gap:18px;flex-wrap:wrap;color:#6f819c;margin-top:12px}.sr-meta{font-size:12px;color:#8ba0bd;margin-top:10px}.empty{padding:28px;border:1px dashed var(--line);border-radius:22px;color:var(--muted);background:#fff}footer{margin-top:26px;color:var(--muted);font-size:13px}.api{color:var(--blue);text-decoration:none}
     @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.hero{display:block}.summary{justify-content:flex-start;margin-top:16px}.card-head{display:block}.badges{justify-content:flex-start;margin-top:12px}}
   </style>
