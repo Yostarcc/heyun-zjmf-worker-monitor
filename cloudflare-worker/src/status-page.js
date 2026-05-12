@@ -47,14 +47,20 @@ function availability(server) {
   return (server.state || 'unknown') === 'healthy' ? '100.000%' : '0.000%';
 }
 
-function daySegments(server, count = 30) {
-  const ok = (server.state || 'unknown') === 'healthy';
-  const base = Number(server.last_check_time || Math.floor(Date.now() / 1000));
-  return Array.from({ length: count }, (_, index) => {
-    const day = base - (count - 1 - index) * 86400;
-    const active = index === count - 1 ? ' active' : '';
-    const tip = escapeHtml(`${fmtDate(day)}\n● ${availability(server)} 可用率\n不可用时长 ${ok ? '0s' : '24h'}`);
-    return `<span class="day-segment ${ok ? 'ok' : 'bad'}${active}" data-tip="${tip}" tabindex="0"></span>`;
+function duration(seconds) {
+  const value = Number(seconds || 0);
+  if (value < 60) return `${value}s`;
+  if (value < 3600) return `${Math.round(value / 60)}m`;
+  return `${Math.floor(value / 3600)}h ${Math.round((value % 3600) / 60)}m`;
+}
+
+function daySegments(server) {
+  const history = (server.daily_history || []).slice(-30);
+  return history.map((day) => {
+    const failures = Number(day.failures || 0);
+    const level = failures === 0 ? 'ok' : Number(day.uptime_value || parseFloat(day.uptime)) <= 0 ? 'bad' : 'warn';
+    const tip = escapeHtml(`${day.date}\n● ${day.uptime} 可用率\n探测 ${day.checks || 0} 次，失败 ${failures} 次\n不可用时长 ${duration(day.downtime_seconds)}`);
+    return `<span class="day-segment ${level}" data-tip="${tip}" tabindex="0"></span>`;
   }).join('');
 }
 
@@ -65,8 +71,7 @@ function bars(server, count = 60) {
   const tip = escapeHtml(`${fmtTime(server.last_check_time)}\n● ${state} · ${speed}`);
   return Array.from({ length: count }, (_, index) => {
     const tall = index > 42 ? 23 : 9 + ((index * 7) % 19);
-    const active = index === count - 1 ? ' active' : '';
-    return `<span class="${ok ? 'ok' : 'bad'}${active}" style="height:${tall}px" data-tip="${tip}" tabindex="0"></span>`;
+    return `<span class="${ok ? 'ok' : 'bad'}" style="height:${tall}px" data-tip="${tip}" tabindex="0"></span>`;
   }).join('');
 }
 
@@ -76,18 +81,37 @@ function latency(server) {
   return { best: text, avg: text, worst: text };
 }
 
+function eventRow(event) {
+  const level = escapeHtml(event.level || 'info');
+  return `<li class="timeline-item level-${level}">
+    <time>${escapeHtml(fmtTime(event.created_at))}</time>
+    <span class="timeline-dot"></span>
+    <div><b>${escapeHtml(event.server_name || '')}${event.server_name ? ' · ' : ''}${escapeHtml(event.label || '状态变更')}</b><p>${escapeHtml(stateLabel(event.old_state))} -> ${escapeHtml(stateLabel(event.new_state))}</p></div>
+  </li>`;
+}
+
+function eventHistory(servers) {
+  const events = servers.flatMap((server) => (server.events || []).map((event) => ({ ...event, server_name: displayName(server) })))
+    .sort((a, b) => Number(b.created_at || 0) - Number(a.created_at || 0))
+    .slice(0, 20);
+  if (!events.length) return '<section class="history"><h2>事件历史</h2><p class="empty">暂无掉线、重启或开机记录。</p></section>';
+  return `<section class="history"><h2>事件历史</h2><ol>${events.map(eventRow).join('')}</ol></section>`;
+}
+
 function row(server) {
   const state = server.state || 'unknown';
   const safeName = escapeHtml(displayName(server));
   const stats = latency(server);
   const method = checkMethod(server);
+  const dayCount = (server.daily_history || []).length;
+  const dayTitle = dayCount ? `近 ${Math.min(dayCount, 30)} 天可用性` : '暂无可用性记录';
   return `<article class="status-card status-card--${state}" role="listitem">
     <div class="card-head">
       <div class="name-row"><span class="dot"></span><div><h3>${safeName}</h3><p>${method}</p></div></div>
       <div class="badges"><span class="uptime">● ${availability(server)}</span><span class="state">${stateLabel(state)}</span></div>
     </div>
-    <p class="caption">近 30 天可用性</p>
-    <div class="day-track" aria-label="近 30 天每日可用性">${daySegments(server)}</div>
+    <p class="caption">${dayTitle}</p>
+    <div class="day-track" aria-label="${dayTitle}">${daySegments(server) || '<span class="day-empty">暂无真实探测记录</span>'}</div>
     <p class="caption">最近 60 次探测</p>
     <div class="probe-bars" aria-label="最近探测详情">${bars(server)}</div>
     <div class="card-foot"><span>最快 ${stats.best}</span><span>平均 ${stats.avg}</span><span>最慢 ${stats.worst}</span><span>${fmtTime(server.last_check_time).slice(-5)}</span></div>
@@ -114,10 +138,10 @@ export function renderStatusPage(servers) {
     .hero{display:flex;align-items:end;justify-content:space-between;gap:18px;margin-bottom:24px}.tag{color:#0b9f75;letter-spacing:.18em;font-size:12px;font-weight:900;text-transform:uppercase}h1{font-size:34px;margin:10px 0 6px;letter-spacing:-.05em}.lead{color:var(--muted);line-height:1.65;margin:0}.summary{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end}.stat{min-width:86px;padding:12px 14px;border:1px solid var(--line);background:#fff;border-radius:18px;box-shadow:0 14px 36px rgba(15,27,45,.07)}.stat b{display:block;font-size:24px}.stat span{color:var(--muted);font-size:12px}
     .service-title{font-size:28px;margin:22px 0 12px}.group-title{font-size:22px;margin:0 0 10px}.grid{display:grid;gap:16px}.status-card{border:1px solid #cfd9e8;background:linear-gradient(180deg,#fff,#f9fbff);box-shadow:0 22px 55px rgba(15,27,45,.10);border-radius:22px;padding:22px;animation:rise .45s ease both}.status-card--healthy{border-color:#b9e9d9}.status-card--down,.status-card--recovering,.status-card--rebooting{border-color:#ffc4cc}
     .card-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.name-row{display:flex;gap:14px;align-items:flex-start}.dot{width:11px;height:11px;border-radius:99px;background:var(--ok);margin-top:10px;box-shadow:0 0 0 5px rgba(16,201,143,.13)}.status-card--down .dot,.status-card--rebooting .dot{background:var(--bad);box-shadow:0 0 0 5px rgba(239,82,103,.13)}h3{margin:0;font-size:25px}.name-row p{margin:4px 0 0;color:#5f718c}.badges{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}.uptime,.state{border:1px solid #b8ecd8;background:#ecfdf6;color:#047857;border-radius:999px;padding:5px 12px;font-size:14px}
-    .caption{color:var(--muted);margin:22px 0 10px}.day-track{height:32px;border-radius:8px;background:var(--track);padding:0 3px;display:flex;gap:2px;align-items:stretch;overflow:visible}.day-segment{position:relative;flex:1;border-radius:6px;background:#cdd8e7;outline:0;transition:transform .16s ease,box-shadow .16s ease}.day-segment.ok{background:linear-gradient(90deg,#34d399,#10c98f)}.day-segment.bad{background:var(--bad)}
-    .probe-bars{height:34px;background:var(--track);border-radius:8px;padding:7px 6px;display:flex;gap:5px;align-items:end}.probe-bars span{position:relative;display:block;width:7px;border-radius:2px;outline:0;transition:transform .16s ease,box-shadow .16s ease}.probe-bars .ok{background:#10c98f}.probe-bars .bad{background:var(--bad)}.day-segment.active,.day-segment:hover,.day-segment:focus,.probe-bars span.active,.probe-bars span:hover,.probe-bars span:focus{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(15,27,45,.20);transform:translateY(-7px);z-index:4}
+    .caption{color:var(--muted);margin:22px 0 10px}.day-track{height:32px;border-radius:8px;background:var(--track);padding:0 3px;display:flex;gap:2px;align-items:stretch;overflow:visible}.day-segment{position:relative;flex:1;border-radius:6px;background:#cdd8e7;outline:0;transition:transform .16s ease,box-shadow .16s ease}.day-segment.ok{background:linear-gradient(90deg,#34d399,#10c98f)}.day-segment.warn{background:#fbbf24}.day-segment.bad{background:var(--bad)}.day-empty{display:grid;place-items:center;width:100%;color:var(--muted);font-size:13px}
+    .probe-bars{height:34px;background:var(--track);border-radius:8px;padding:7px 6px;display:flex;gap:5px;align-items:end}.probe-bars span{position:relative;display:block;width:7px;border-radius:2px;outline:0;transition:transform .16s ease,box-shadow .16s ease}.probe-bars .ok{background:#10c98f}.probe-bars .bad{background:var(--bad)}.day-segment:hover,.day-segment:focus,.probe-bars span:hover,.probe-bars span:focus{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(15,27,45,.20);transform:translateY(-7px);z-index:4}
     .day-track span:hover:after,.day-track span:focus:after,.probe-bars span:hover:after,.probe-bars span:focus:after{content:attr(data-tip);position:absolute;left:50%;bottom:30px;transform:translateX(-50%);z-index:6;white-space:pre;min-width:180px;background:#fff;border:1px solid var(--line);box-shadow:0 18px 36px rgba(15,27,45,.16);border-radius:12px;padding:10px 12px;color:var(--ink);font-size:13px}.day-track span:hover:before,.day-track span:focus:before,.probe-bars span:hover:before,.probe-bars span:focus:before{content:"";position:absolute;left:50%;bottom:24px;border:7px solid transparent;border-top-color:#fff;transform:translateX(-50%);z-index:7}
-    .card-foot{display:flex;gap:18px;flex-wrap:wrap;color:#6f819c;margin-top:12px}.sr-meta{font-size:12px;color:#8ba0bd;margin-top:10px}.empty{padding:28px;border:1px dashed var(--line);border-radius:22px;color:var(--muted);background:#fff}footer{margin-top:26px;color:var(--muted);font-size:13px}.api{color:var(--blue);text-decoration:none}
+    .card-foot{display:flex;gap:18px;flex-wrap:wrap;color:#6f819c;margin-top:12px}.sr-meta{font-size:12px;color:#8ba0bd;margin-top:10px}.history{margin-top:28px}.history h2{font-size:24px}.history ol{list-style:none;margin:0;padding:0;display:grid;gap:10px}.timeline-item{display:grid;grid-template-columns:156px 18px 1fr;gap:12px;align-items:start;padding:14px;border:1px solid var(--line);background:#fff;border-radius:16px}.timeline-item time{color:var(--muted);font-size:13px}.timeline-dot{width:10px;height:10px;border-radius:99px;background:var(--blue);margin-top:4px}.level-critical .timeline-dot{background:var(--bad)}.level-warning .timeline-dot{background:var(--warn)}.level-info .timeline-dot{background:var(--ok)}.timeline-item b{display:block}.timeline-item p{margin:4px 0 0;color:var(--muted)}.empty{padding:28px;border:1px dashed var(--line);border-radius:22px;color:var(--muted);background:#fff}footer{margin-top:26px;color:var(--muted);font-size:13px}.api{color:var(--blue);text-decoration:none}
     @keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}@media(max-width:760px){.hero{display:block}.summary{justify-content:flex-start;margin-top:16px}.card-head{display:block}.badges{justify-content:flex-start;margin-top:12px}}
   </style>
 </head>
@@ -125,10 +149,11 @@ export function renderStatusPage(servers) {
   <main>
     <nav class="pageNav"><a class="adminLink" href="/admin">管理面板</a></nav>
     <section class="hero">
-      <div><span class="tag">ZJMF Monitor</span><h1>核云服务器<br>自动监控</h1><p class="lead">Cloudflare Worker 按探测间隔执行 API / HTTP(S) / TCP 检测；连续失败 3 次后确认异常并执行硬重启。</p></div>
+      <div><span class="tag">ZJMF Monitor</span><h1>服务器自动监控</h1><p class="lead">Cloudflare Worker 按探测间隔执行 API / HTTP(S) / TCP 检测；连续失败 3 次后确认异常并执行硬重启。</p></div>
       <div class="summary"><div class="stat"><b>${servers.length}</b><span>监控项</span></div><div class="stat"><b>${healthy}</b><span>正常</span></div><div class="stat"><b>${problem}</b><span>异常/恢复中</span></div></div>
     </section>
     ${cards}
+    ${eventHistory(servers)}
     <footer>数据接口：<a class="api" href="/api/status">/api/status</a></footer>
   </main>
 </body>

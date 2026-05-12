@@ -10,6 +10,16 @@ function rowToBool(row, key) {
   return Number(row[key]) === 1;
 }
 
+function placeholders(values, start = 1) {
+  return values.map((_, index) => `?${start + index}`).join(',');
+}
+
+function percent(ok, total) {
+  const count = Number(total || 0);
+  if (count <= 0) return '0.000%';
+  return `${((Number(ok || 0) / count) * 100).toFixed(3)}%`;
+}
+
 export class D1Repository {
   constructor(db) {
     this.db = db;
@@ -130,6 +140,52 @@ export class D1Repository {
       LIMIT ?1
     `).bind(limit).all();
     return results || [];
+  }
+
+  async listDailyHistory(serverIds, days = 30, now = Math.floor(Date.now() / 1000)) {
+    if (!serverIds.length) return new Map();
+    const since = now - days * 24 * 60 * 60;
+    const ids = placeholders(serverIds);
+    const { results } = await this.db.prepare(`
+      SELECT server_id,
+             strftime('%Y-%m-%d', created_at, 'unixepoch', '+8 hours') AS date_key,
+             COUNT(*) AS total,
+             SUM(CASE WHEN ok = 1 THEN 1 ELSE 0 END) AS ok_count,
+             AVG(latency_ms) AS avg_latency_ms
+      FROM check_results
+      WHERE server_id IN (${ids}) AND created_at >= ?${serverIds.length + 1}
+      GROUP BY server_id, date_key
+      ORDER BY date_key ASC
+    `).bind(...serverIds, since).all();
+    const grouped = new Map(serverIds.map((id) => [String(id), []]));
+    for (const row of results || []) {
+      const total = Number(row.total || 0);
+      const ok = Number(row.ok_count || 0);
+      grouped.get(String(row.server_id))?.push({
+        date: row.date_key,
+        checks: total,
+        failures: Math.max(0, total - ok),
+        uptime: percent(ok, total),
+        avg_latency_ms: Math.round(Number(row.avg_latency_ms || 0)),
+        downtime_seconds: Math.max(0, total - ok) * 300,
+      });
+    }
+    return grouped;
+  }
+
+  async listPublicEvents(serverIds, limit = 80) {
+    if (!serverIds.length) return new Map();
+    const ids = placeholders(serverIds);
+    const { results } = await this.db.prepare(`
+      SELECT id,server_id,old_state,new_state,label,level,created_at
+      FROM events
+      WHERE server_id IN (${ids})
+      ORDER BY created_at DESC
+      LIMIT ?${serverIds.length + 1}
+    `).bind(...serverIds, limit).all();
+    const grouped = new Map(serverIds.map((id) => [String(id), []]));
+    for (const event of results || []) grouped.get(String(event.server_id))?.push(event);
+    return grouped;
   }
 
   async upsertProvider(provider, now) {

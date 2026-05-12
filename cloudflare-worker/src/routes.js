@@ -43,6 +43,11 @@ function adminServer(server) {
   return { ...rest, name: serverDisplayName(server) };
 }
 
+function publicEvent(event) {
+  const { id, server_id, old_state, new_state, label, level, created_at } = event;
+  return { id, server_id, old_state, new_state, label, level, created_at };
+}
+
 function adminServers(servers, status) {
   const activeIds = new Set(status.map((server) => String(server.id)));
   return servers.map(adminServer).sort((a, b) => {
@@ -53,12 +58,24 @@ function adminServers(servers, status) {
   });
 }
 
+async function publicStatus(repo) {
+  const servers = (await repo.listStatus()).map(publicServer);
+  const ids = servers.map((server) => String(server.id));
+  const daily = await repo.listDailyHistory(ids);
+  const events = await repo.listPublicEvents(ids);
+  return servers.map((server) => ({
+    ...server,
+    daily_history: daily.get(String(server.id)) || [],
+    events: (events.get(String(server.id)) || []).map(publicEvent),
+  }));
+}
+
 export async function handleRequest(request, env) {
   const url = new URL(request.url);
   const repo = new D1Repository(env.DB);
 
   if ((url.pathname === '/' || url.pathname === '/status') && request.method === 'GET') {
-    return new Response(renderStatusPage(await repo.listStatus()), {
+    return new Response(renderStatusPage(await publicStatus(repo)), {
       headers: { 'content-type': 'text/html; charset=utf-8' },
     });
   }
@@ -70,7 +87,7 @@ export async function handleRequest(request, env) {
   }
 
   if (url.pathname === '/api/status' && request.method === 'GET') {
-    return json({ servers: (await repo.listStatus()).map(publicServer) });
+    return json({ servers: await publicStatus(repo) });
   }
 
   if (!url.pathname.startsWith('/api/admin/')) return json({ error: 'NOT_FOUND' }, 404);

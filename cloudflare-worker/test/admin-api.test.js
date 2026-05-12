@@ -33,6 +33,7 @@ class FakeStatement {
     }
     if (this.sql.includes('SELECT * FROM servers ORDER BY id')) return { results: this.data.servers };
     if (this.sql.includes('FROM servers s')) return { results: this.data.status };
+    if (this.sql.includes('FROM check_results')) return { results: this.data.dailyResults };
     if (this.sql.includes('FROM events')) return { results: this.data.events };
     throw new Error(`Unexpected SQL: ${this.sql}`);
   }
@@ -150,6 +151,9 @@ function env(overrides = {}) {
           created_at: 1778384953,
         },
       ],
+      dailyResults: overrides.dailyResults || [
+        { server_id: '8564', date_key: '2026-05-10', total: 2, ok_count: 1, avg_latency_ms: 1500 },
+      ],
     }),
   };
 }
@@ -206,6 +210,36 @@ test('公共状态接口不返回服务器 IP', async () => {
   assert.equal(data.servers[0].http_url, undefined);
   assert.equal(data.servers[0].tcp_host, undefined);
   assert.doesNotMatch(text, /203\.0\.113\.10/);
+});
+
+test('公共状态接口返回真实天级可用性和事件历史且不泄露地址', async () => {
+  const res = await handleRequest(new Request('https://worker.example/api/status'), env({
+    events: [
+      {
+        id: 2,
+        server_id: '8564',
+        old_state: 'down',
+        new_state: 'rebooting',
+        label: '触发重启',
+        level: 'critical',
+        message: '203.0.113.10 已触发重启',
+        created_at: 1778385053,
+      },
+    ],
+    dailyResults: [
+      { server_id: '8564', date_key: '2026-05-10', total: 3, ok_count: 2, avg_latency_ms: 1200 },
+      { server_id: '8564', date_key: '2026-05-11', total: 1, ok_count: 1, avg_latency_ms: 900 },
+    ],
+  }));
+  const text = await res.text();
+  const data = JSON.parse(text);
+
+  assert.equal(res.status, 200);
+  assert.equal(data.servers[0].daily_history.length, 2);
+  assert.equal(data.servers[0].daily_history[0].uptime, '66.667%');
+  assert.equal(data.servers[0].daily_history[0].failures, 1);
+  assert.equal(data.servers[0].events[0].label, '触发重启');
+  assert.doesNotMatch(text, /203\.0\.113\.10|api\.example|provider-secret|pushplus-secret/);
 });
 
 test('管理后台保存脱敏服务器时保留原 IP', async () => {
