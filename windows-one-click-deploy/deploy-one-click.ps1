@@ -378,7 +378,13 @@ function Ensure-WorkersDevEnabled([string]$WorkerRoot) {
 }
 function Post-Admin($BaseUrl, $Token, [string]$Path, $Body) {
     $json = $Body | ConvertTo-Json -Depth 8 -Compress
-    Invoke-RestMethod -Method Post -Uri "$BaseUrl$Path" -Headers @{ Authorization = "Bearer $Token" } -ContentType "application/json; charset=utf-8" -Body $json | Out-Null
+    try {
+        Invoke-RestMethod -Method Post -Uri "$BaseUrl$Path" -Headers @{ Authorization = "Bearer $Token" } -ContentType "application/json; charset=utf-8" -Body $json -TimeoutSec 30 | Out-Null
+        return $true
+    } catch {
+        Write-Host "警告：POST $Path 失败（$($_.Exception.Message)），可在管理后台手动补齐。" -ForegroundColor Yellow
+        return $false
+    }
 }
 function Get-WorkersDevUrl([string]$WorkerName, $Config) {
     $accountId = Get-ConfigValue $Config "cloudflareAccountId" $env:CLOUDFLARE_ACCOUNT_ID
@@ -507,7 +513,7 @@ if (-not $workerUrl) {
     Write-Host "部署命令已完成，但脚本未自动解析到 workers.dev 地址；请以上方 Wrangler 输出为准。" -ForegroundColor Yellow
 }
 
-if (-not $SkipSeed -and $workerUrl) { Start-Sleep -Seconds 3; Seed-MonitorConfig $workerUrl $adminToken $Config }
+if (-not $SkipSeed -and $workerUrl) { Start-Sleep -Seconds 10; Seed-MonitorConfig $workerUrl $adminToken $Config }
 
 Write-Host ""
 Write-Host "部署完成。" -ForegroundColor Green
