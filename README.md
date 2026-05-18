@@ -29,7 +29,7 @@ cloudflare-worker/README.md
 
 1. Fork 本仓库。
 2. 下载安装脚本：
-   - [点击下载步骤1安装脚本 step1-install.bat](https://github.com/loqwe/heyun-zjmf-worker-monitor/releases/download/release-step1-bat-v1/step1-install.bat)
+   - [点击下载：步骤1-一键安装脚本](https://github.com/loqwe/heyun-zjmf-worker-monitor/releases/download/release-step1-bat-v1/step1-install.bat)
    - 保存到你想部署的目录，例如 `D:\heyun-zjmf-worker-monitor\`
    - 这是 GitHub Release 附件链接，点击后会直接下载，不会打开成文本
 3. 准备脚本要填写的信息：
