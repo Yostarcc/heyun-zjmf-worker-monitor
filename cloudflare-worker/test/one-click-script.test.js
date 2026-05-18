@@ -43,6 +43,7 @@ test('下载页会用浏览器下载属性指定中文文件名', () => {
   assert.match(page, /const fileName = '步骤1-一键安装脚本\.bat'/);
   assert.match(page, /link\.download = fileName/);
   assert.match(page, /raw\.githubusercontent\.com/);
+  assert.match(workflow, /enablement: true/);
   assert.match(workflow, /actions\/upload-pages-artifact@v4/);
   assert.match(workflow, /actions\/deploy-pages@v4/);
   assert.match(workflow, /public\/download-step1\.html/);
