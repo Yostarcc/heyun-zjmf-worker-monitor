@@ -22,25 +22,18 @@ test('步骤1脚本写明 GitHub 仓库地址并复用为下载源', () => {
   assert.match(installer, /raw\.githubusercontent\.com/);
 });
 
-test('文档里的步骤1下载入口使用 HTML 预览下载页', () => {
+test('文档里的步骤1下载入口使用 Release 直链', () => {
   const rootReadme = readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
   const workerReadme = readFileSync(path.join(repoRoot, 'cloudflare-worker', 'README.md'), 'utf8');
   const usage = readUtf8('使用说明.txt');
-  const downloadUrl = /https:\/\/htmlpreview\.github\.io\/\?https:\/\/github\.com\/loqwe\/heyun-zjmf-worker-monitor\/blob\/main\/download-step1\.html/;
+  const downloadUrl = /https:\/\/github\.com\/loqwe\/heyun-zjmf-worker-monitor\/releases\/download\/release-step1-bat-v1\/step1-install\.bat/;
 
   assert.match(rootReadme, downloadUrl);
   assert.match(workerReadme, downloadUrl);
   assert.match(usage, downloadUrl);
-  assert.match(rootReadme, /点 \*\*立即下载\*\*，会保存为 `步骤1-一键安装脚本\.bat`/);
-});
-
-test('下载页会用浏览器下载属性指定中文文件名', () => {
-  const page = readFileSync(path.join(repoRoot, 'download-step1.html'), 'utf8');
-
-  assert.match(page, /const fileName = '步骤1-一键安装脚本\.bat'/);
-  assert.match(page, /link\.download = fileName/);
-  assert.match(page, /raw\.githubusercontent\.com/);
-  assert.doesNotMatch(page, /window\.addEventListener\('load'/);
+  assert.match(rootReadme, /直接下载 `step1-install\.bat`/);
+  assert.doesNotMatch(rootReadme, /htmlpreview\.github\.io/);
+  assert.doesNotMatch(workerReadme, /htmlpreview\.github\.io/);
 });
 
 test('Release workflow 会发布中文名步骤1安装脚本附件', () => {
