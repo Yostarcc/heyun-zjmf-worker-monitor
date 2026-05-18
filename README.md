@@ -38,6 +38,7 @@ cloudflare-worker/README.md
    - **Fork 后的仓库地址**：打开你 Fork 后的 GitHub 仓库，复制浏览器地址，例如 `https://github.com/你的用户名/heyun-zjmf-worker-monitor`。
    - **魔方财务 API**：打开 <https://www.heyunidc.cn/apimanage>，复制魔方财务登录邮箱或手机号、API 密钥；产品 ID 可部署后在管理后台添加监控项时填写。
 4. 双击下载得到的 `step1-install.bat`，按提示粘贴以上信息。
+   如果你是在 PowerShell 当前目录里手动运行，请先 `cd` 到文件所在目录，再输入 `.\step1-install.bat`；不要直接粘贴完整路径。若文件名变成了 `step1-install (4).bat`，先删掉旧文件再重新下载。
 5. 脚本会自动检查依赖、下载部署文件、生成配置并启动部署。
 6. 完成后按日志里的真实地址访问状态页和管理后台。
 
