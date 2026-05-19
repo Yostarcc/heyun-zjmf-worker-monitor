@@ -105,6 +105,19 @@ function Convert-GitHubRepoInput([string]$Value) {
     if ($text -match '^[^/\s]+/[^/\s]+$') { return $text }
     throw "仓库地址格式不正确，请输入 https://github.com/用户名/仓库名 或 用户名/仓库名。"
 }
+function Resolve-GitHubRefSha([string]$Repo, [string]$Ref, [string]$Token = "") {
+    if ([string]::IsNullOrWhiteSpace($Repo) -or [string]::IsNullOrWhiteSpace($Ref)) { return "" }
+    try {
+        $headers = @{ "User-Agent" = "heyun-zjmf-worker-monitor-one-click"; "Accept" = "application/vnd.github+json" }
+        if (-not [string]::IsNullOrWhiteSpace($Token)) { $headers.Authorization = "Bearer $Token" }
+        $apiUrl = "https://api.github.com/repos/$Repo/commits/$Ref"
+        $data = Invoke-RestMethod -Method Get -Uri $apiUrl -Headers $headers -TimeoutSec 30
+        return [string]$data.sha
+    } catch {
+        Write-Note "未能解析 GitHub 当前版本号：$($_.Exception.Message)"
+        return ""
+    }
+}
 function Save-Config($Config) {
     $Config | ConvertTo-Json -Depth 10 | Set-Content -LiteralPath $script:ConfigPath -Encoding utf8
 }
@@ -154,7 +167,7 @@ function Get-DefaultConfigText {
   // 管理后台网站密码；双击 BAT 交互部署时会要求输入两次
   "adminToken": "请填写强密码",
 
-  // 可选：网页“系统更新”触发 GitHub Actions 用的 Fine-grained PAT
+  // 可选：网页“系统更新 -> 确定更新”触发 GitHub Actions 用的 Fine-grained PAT
   "webUpdateGitHubToken": "",
 
   // 魔方财务配置；可留空，部署后到 /admin 初始化向导填写
@@ -343,6 +356,18 @@ function Invoke-InteractiveSetup($Config) {
     $script:UpstreamRepo = Convert-GitHubRepoInput $repoInput
     $Config.upstreamRepo = $script:UpstreamRepo
     Save-Config $Config
+    $existingUpdateToken = Get-ConfigValue $Config "webUpdateGitHubToken" $env:WEB_UPDATE_GITHUB_TOKEN
+    $updateToken = Read-OptionalSecret "请输入 GitHub 更新令牌（用于管理后台点确定更新；直接回车可跳过）"
+    if (-not [string]::IsNullOrWhiteSpace($updateToken)) {
+        $Config.webUpdateGitHubToken = $updateToken
+        $env:WEB_UPDATE_GITHUB_TOKEN = $updateToken
+        Save-Config $Config
+    } elseif (-not [string]::IsNullOrWhiteSpace($existingUpdateToken)) {
+        $env:WEB_UPDATE_GITHUB_TOKEN = $existingUpdateToken
+        Write-Note "已保留配置文件中的 GitHub 更新令牌。"
+    } else {
+        Write-Host "未填写 GitHub 更新令牌：管理后台仍可检查更新，但点“确定更新”会提示 GITHUB_TOKEN_NOT_CONFIGURED。" -ForegroundColor Yellow
+    }
     $Config.adminToken = Read-AdminTokenWithConfirmation
     Save-Config $Config
     if ($Config.adminToken -eq "admin") { Write-Host "已使用默认管理后台密码：admin。部署后可在管理面板设置里修改。" -ForegroundColor Yellow }
@@ -405,14 +430,19 @@ function Post-Admin($BaseUrl, $Token, [string]$Path, $Body) {
 }
 function Wait-AdminApiReady($BaseUrl, $Token) {
     Write-Step "等待管理接口就绪"
-    for ($i = 1; $i -le 18; $i++) {
+    $maxAttempts = 30
+    for ($i = 1; $i -le $maxAttempts; $i++) {
         try {
-            Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/admin/overview" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 15 | Out-Null
+            Invoke-RestMethod -Method Get -Uri "$BaseUrl/api/admin/overview" -Headers @{ Authorization = "Bearer $Token" } -TimeoutSec 30 | Out-Null
             Write-Note "管理接口已就绪。"
             return $true
         } catch {
-            Write-Note "管理接口尚未就绪，第 $i/18 次：$($_.Exception.Message)"
-            Start-Sleep -Seconds 5
+            $message = $_.Exception.Message
+            if ($message -match "HttpClient\.Timeout|timed out|operation has timed out|请求超时|超时") {
+                $message = "请求响应超时，Worker 可能仍在冷启动或部署传播中，继续重试"
+            }
+            Write-Note "管理接口正在冷启动或部署传播中，第 $i/$maxAttempts 次等待：$message"
+            Start-Sleep -Seconds 6
         }
     }
     Write-Host "警告：管理接口暂未就绪，跳过自动写入初始化配置；可稍后重走脚本或到 /admin 手动补齐。" -ForegroundColor Yellow
@@ -510,6 +540,12 @@ $workerName = Get-ConfigValue $Config "workerName" "zjmf-monitor"
 $databaseName = Get-ConfigValue $Config "d1DatabaseName" "$workerName-d1"
 $env:WORKER_NAME = $workerName
 $env:D1_DATABASE_NAME = $databaseName
+$env:GITHUB_REPOSITORY = Get-ConfigValue $Config "upstreamRepo" $UpstreamRepo
+$env:GITHUB_REF_NAME = Get-ConfigValue $Config "githubBranch" $UpstreamRef
+$env:GITHUB_WORKFLOW_FILE = Get-ConfigValue $Config "githubWorkflowFile" "deploy.yml"
+$versionToken = Get-ConfigValue $Config "webUpdateGitHubToken" $env:WEB_UPDATE_GITHUB_TOKEN
+$resolvedSha = Resolve-GitHubRefSha $env:GITHUB_REPOSITORY $env:GITHUB_REF_NAME $versionToken
+if ($resolvedSha) { $env:APP_VERSION = $resolvedSha }
 
 Write-Step "本次部署配置"
 Write-Host "  源码目录 : $workerRoot"

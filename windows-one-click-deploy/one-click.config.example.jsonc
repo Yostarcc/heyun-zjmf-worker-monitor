@@ -10,7 +10,7 @@
   // 管理后台网站密码；双击 BAT 交互部署时会要求输入两次
   "adminToken": "请填写强密码",
 
-  // 可选：网页“系统更新”触发 GitHub Actions 用的 Fine-grained PAT
+  // 可选：网页“系统更新 -> 确定更新”触发 GitHub Actions 用的 Fine-grained PAT
   "webUpdateGitHubToken": "",
 
   // 魔方财务配置；可留空，部署后到 /admin 初始化向导填写

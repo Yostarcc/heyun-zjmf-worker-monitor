@@ -44,12 +44,46 @@ function createDatabase() {
   return fromToml || fromUuid || '';
 }
 
+function tomlString(value) {
+  return String(value).replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+}
+
+function patchVars(toml, vars) {
+  const entries = Object.entries(vars).filter(([, value]) => String(value || '').trim());
+  if (entries.length === 0) return toml;
+  const lines = toml.split(/\r?\n/);
+  let start = lines.findIndex((line) => line.trim() === '[vars]');
+  if (start < 0) {
+    const insertAt = lines.findIndex((line) => /^\s*\[/.test(line));
+    const block = ['[vars]', ...entries.map(([key, value]) => `${key} = "${tomlString(value)}"`), ''];
+    lines.splice(insertAt < 0 ? lines.length : insertAt, 0, ...block);
+    return lines.join('\n');
+  }
+  let end = start + 1;
+  while (end < lines.length && !/^\s*\[/.test(lines[end])) end++;
+  const body = lines.slice(start + 1, end);
+  for (const [key, value] of entries) {
+    const idx = body.findIndex((line) => new RegExp(`^\\s*${key}\\s*=`).test(line));
+    const next = `${key} = "${tomlString(value)}"`;
+    if (idx >= 0) body[idx] = next;
+    else body.push(next);
+  }
+  lines.splice(start + 1, end - start - 1, ...body);
+  return lines.join('\n');
+}
+
 function patchWranglerToml(databaseId) {
   const path = 'wrangler.toml';
   let toml = readFileSync(path, 'utf8');
   toml = toml.replace(/^name = ".*"$/m, `name = "${workerName}"`);
   toml = toml.replace(/^database_name = ".*"$/m, `database_name = "${databaseName}"`);
   toml = toml.replace(/^database_id = ".*"$/m, `database_id = "${databaseId}"`);
+  toml = patchVars(toml, {
+    APP_VERSION: process.env.APP_VERSION || process.env.GITHUB_SHA || '',
+    GITHUB_REPOSITORY: process.env.GITHUB_REPOSITORY || '',
+    GITHUB_BRANCH: process.env.GITHUB_BRANCH || process.env.GITHUB_REF_NAME || '',
+    GITHUB_WORKFLOW_FILE: process.env.GITHUB_WORKFLOW_FILE || 'deploy.yml',
+  });
   writeFileSync(path, toml);
 }
 
