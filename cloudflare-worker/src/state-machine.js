@@ -1,4 +1,4 @@
-import { STATES } from './constants.js';
+import { DEFAULT_SETTINGS, STATES } from './constants.js';
 
 export function createRuntime(overrides = {}) {
   const now = overrides.now ?? 0;
@@ -23,17 +23,24 @@ function transition(runtime, state, now) {
   return { ...runtime, state, state_changed_at: now };
 }
 
+function recoverSuccessThreshold(settings) {
+  const value = Number(settings.recover_success_threshold || DEFAULT_SETTINGS.recover_success_threshold);
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
 export function advanceState(runtime, health, settings, now) {
   let next = { ...runtime, last_check_time: now };
   if (health === true) {
+    const upThreshold = recoverSuccessThreshold(settings);
     next.consecutive_failures = 0;
     next.consecutive_successes += 1;
     if (next.state === STATES.SUSPECT || next.state === STATES.RECOVERING || next.state === STATES.REBOOTING) {
       next.first_failure_at = 0;
-      return transition(next, STATES.HEALTHY, now);
+      return next.consecutive_successes >= upThreshold ? transition(next, STATES.HEALTHY, now) : next;
     }
     if (next.state === STATES.DOWN) {
       next.consecutive_successes = 1;
+      next.first_failure_at = 0;
       return transition(next, STATES.SUSPECT, now);
     }
     return next;

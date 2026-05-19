@@ -204,7 +204,7 @@ export async function handleRequest(request, env) {
         headers: { 'content-type': 'text/html; charset=utf-8' },
       });
     }
-    return new Response(renderStatusPage(await publicStatus(repo)), {
+    return new Response(renderStatusPage(await publicStatus(repo), await repo.getSettings()), {
       headers: { 'content-type': 'text/html; charset=utf-8' },
     });
   }

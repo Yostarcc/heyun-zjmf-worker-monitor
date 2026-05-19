@@ -85,6 +85,18 @@ test('状态页不显示服务器 IP，名称为 IP 时改用泛化名称', () =
   assert.doesNotMatch(html, /203\.0\.113\.10/);
 });
 
+test('状态页使用站点品牌设置渲染标题和描述', () => {
+  const html = renderStatusPage([], {
+    site_title: '核云状态页',
+    site_description: '自定义状态页描述',
+  });
+
+  assert.match(html, /<title>核云状态页<\/title>/);
+  assert.match(html, /<h1>核云状态页<\/h1>/);
+  assert.match(html, /自定义状态页描述/);
+  assert.doesNotMatch(html, /服务器自动监控/);
+});
+
 test('状态页最近探测条使用真实探测时间和延迟', () => {
   const t1 = new Date(1778385053 * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });
   const t2 = new Date(1778384753 * 1000).toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai', hour12: false });

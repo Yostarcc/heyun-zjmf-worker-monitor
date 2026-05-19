@@ -399,6 +399,31 @@ test('管理概览返回数据保留和后台分析默认范围配置', async ()
   assert.equal(data.settings.admin_monitor_range, '30d');
 });
 
+test('管理概览返回站点品牌和状态切换默认值配置', async () => {
+  const res = await handleRequest(
+    new Request('https://worker.example/api/admin/overview', {
+      headers: { authorization: 'Bearer admin-password' },
+    }),
+    env({
+      settings: {
+        site_title: '核云状态页',
+        site_description: '自定义状态页描述',
+        timezone: 'UTC',
+        suspect_threshold: '4',
+        recover_success_threshold: '2',
+      },
+    }),
+  );
+  const data = await res.json();
+
+  assert.equal(res.status, 200);
+  assert.equal(data.settings.site_title, '核云状态页');
+  assert.equal(data.settings.site_description, '自定义状态页描述');
+  assert.equal(data.settings.timezone, 'UTC');
+  assert.equal(data.settings.suspect_threshold, 4);
+  assert.equal(data.settings.recover_success_threshold, 2);
+});
+
 test('管理概览优先返回启用服务器，避免表单默认选中旧禁用记录', async () => {
   const res = await handleRequest(
     new Request('https://worker.example/api/admin/overview', {

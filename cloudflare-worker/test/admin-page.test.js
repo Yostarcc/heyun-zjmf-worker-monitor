@@ -50,8 +50,18 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.match(html, /通知渠道/);
   assert.match(html, /系统更新/);
   assert.match(html, /数据保留/);
+  assert.match(html, /站点品牌/);
+  assert.match(html, /用于控制状态页标题与描述/);
+  assert.match(html, /class="settingsStack"/);
+  assert.match(html, /class="settingsCard settingsBrand"/);
+  assert.match(html, /name="site_title"/);
+  assert.match(html, /name="site_description"/);
+  assert.match(html, /name="timezone"/);
   assert.match(html, /D1 中原始探测结果的保留天数/);
   assert.match(html, /name="data_retention_days"/);
+  assert.match(html, /状态切换默认值/);
+  assert.match(html, /name="suspect_threshold"/);
+  assert.match(html, /name="recover_success_threshold"/);
   assert.match(html, /后台默认值/);
   assert.match(html, /后台分析页面默认时间范围/);
   assert.match(html, /name="admin_overview_range"/);
@@ -92,6 +102,9 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.doesNotMatch(html, /每小时重启上限|每日重启上限/);
   assert.match(html, /api_timeout:Math\.max/);
   assert.match(html, /data_retention_days:Number/);
+  assert.match(html, /site_title:b\.site_title/);
+  assert.match(html, /timezone:b\.timezone/);
+  assert.match(html, /suspect_threshold:Number/);
   assert.match(html, /admin_overview_range:b\.admin_overview_range/);
   assert.match(html, /function autoFillHttpUrl/);
   assert.match(html, /autoFillHttpUrl\(form\)/);

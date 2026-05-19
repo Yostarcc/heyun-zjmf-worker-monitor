@@ -136,7 +136,10 @@ function row(server) {
   </article>`;
 }
 
-export function renderStatusPage(servers) {
+export function renderStatusPage(servers, settings = {}) {
+  const siteTitle = String(settings.site_title || '服务器自动监控');
+  const documentTitle = String(settings.site_title || 'ZJMF 服务器监控');
+  const siteDescription = String(settings.site_description || 'Cloudflare Worker 按探测间隔执行 API / HTTP(S) / TCP 检测；连续失败 3 次后确认异常并执行重启。');
   const cards = servers.length
     ? `<section class="service-group"><h2 class="group-title">未分组</h2><div class="grid" role="list">${servers.map(row).join('')}</div></section>`
     : '<p class="empty">暂无启用的监控服务器。</p>';
@@ -145,7 +148,7 @@ export function renderStatusPage(servers) {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>ZJMF 服务器监控</title>
+  <title>${escapeHtml(documentTitle)}</title>
   <style>
     :root{--bg:#f6f8fb;--panel:#fff;--ink:#0f1b2d;--muted:#7b8da8;--line:#d9e2ef;--track:#e8eef7;--ok:#10c98f;--bad:#ef5267;--warn:#f59e0b;--blue:#2563eb}
     *{box-sizing:border-box}body{margin:0;min-height:100vh;background:radial-gradient(circle at 12% 0,rgba(16,201,143,.12),transparent 28%),linear-gradient(180deg,#fff,var(--bg));color:var(--ink);font-family:"Bahnschrift","Aptos Display","Microsoft YaHei UI",sans-serif}
@@ -164,7 +167,7 @@ export function renderStatusPage(servers) {
   <main>
     <nav class="pageNav"><a class="adminLink" href="/admin">管理面板</a></nav>
     <section class="hero">
-      <div><span class="tag">ZJMF Monitor</span><h1>服务器自动监控</h1><p class="lead">Cloudflare Worker 按探测间隔执行 API / HTTP(S) / TCP 检测；连续失败 3 次后确认异常并执行重启。</p></div>
+      <div><span class="tag">ZJMF Monitor</span><h1>${escapeHtml(siteTitle)}</h1><p class="lead">${escapeHtml(siteDescription)}</p></div>
     </section>
     ${cards}
     ${eventHistory(servers)}

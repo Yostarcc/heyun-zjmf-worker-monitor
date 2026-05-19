@@ -37,8 +37,11 @@ export class D1Repository {
       api_timeout: numberSetting(raw.api_timeout, DEFAULT_SETTINGS.api_timeout),
       default_daily_reboot_limit: numberSetting(raw.default_daily_reboot_limit, DEFAULT_SETTINGS.default_daily_reboot_limit),
       data_retention_days: numberSetting(raw.data_retention_days, DEFAULT_SETTINGS.data_retention_days),
+      recover_success_threshold: numberSetting(raw.recover_success_threshold, DEFAULT_SETTINGS.recover_success_threshold),
       admin_overview_range: raw.admin_overview_range || DEFAULT_SETTINGS.admin_overview_range,
       admin_monitor_range: raw.admin_monitor_range || DEFAULT_SETTINGS.admin_monitor_range,
+      site_title: raw.site_title || DEFAULT_SETTINGS.site_title,
+      site_description: raw.site_description || DEFAULT_SETTINGS.site_description,
       webhook_name: raw.webhook_name || DEFAULT_SETTINGS.webhook_name,
       webhook_url: raw.webhook_url || '',
       webhook_type: raw.webhook_type || 'custom',
@@ -46,7 +49,7 @@ export class D1Repository {
       webhook_headers: raw.webhook_headers || DEFAULT_SETTINGS.webhook_headers,
       webhook_template: raw.webhook_template || DEFAULT_SETTINGS.webhook_template,
       pushplus_token: raw.pushplus_token || '',
-      timezone: raw.timezone || 'Asia/Shanghai',
+      timezone: raw.timezone || DEFAULT_SETTINGS.timezone,
       setup_completed: raw.setup_completed || '0',
     };
   }

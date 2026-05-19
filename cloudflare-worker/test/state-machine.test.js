@@ -35,6 +35,18 @@ test('恢复期检测正常会回到 healthy 并清理首次失败时间', () =>
   assert.equal(next.consecutive_failures, 0);
 });
 
+test('判定 UP 可配置为连续成功 2 次后恢复', () => {
+  const settings = { suspect_threshold: 3, recover_success_threshold: 2, recover_timeout: 300 };
+  const suspect = createRuntime({ state: 'suspect', consecutive_failures: 1, first_failure_at: 1000 });
+  const first = advanceState(suspect, true, settings, 1100);
+  const second = advanceState(first, true, settings, 1200);
+
+  assert.equal(first.state, 'suspect');
+  assert.equal(first.consecutive_successes, 1);
+  assert.equal(second.state, 'healthy');
+  assert.equal(second.consecutive_successes, 2);
+});
+
 test('恢复超时会重新回到 down 并允许再次重启', () => {
   const settings = { suspect_threshold: 2, recover_timeout: 300 };
   const runtime = createRuntime({
