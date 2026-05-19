@@ -97,12 +97,16 @@ function Show-InteractiveGuide {
     Write-Host "   可复制脚本检测显示的账户 ID；也可在 Cloudflare 账户主页右侧三个点里点击 复制账户 ID。"
     Write-Host "3. GitHub 仓库地址："
     Write-Host "   复制你 Fork 后仓库的地址，例如 https://github.com/你的用户名/heyun-zjmf-worker-monitor。"
-    Write-Host "4. GitHub 更新令牌（可选，用于网页点 确定更新）："
+    Write-Host ""
+    Write-Host "更新方式："
+    Write-Host "1. 首推：双击 步骤1-一键安装脚本.bat，脚本会刷新源码并复用同名 D1 数据库。"
+    Write-Host "2. 管理后台 -> 系统更新 -> 检查更新 / 确定更新。此方式需要 GitHub 更新令牌："
     Write-Host "   打开 https://github.com/settings/personal-access-tokens/new"
     Write-Host "   Token name 填 zjmf-monitor-update；Resource owner 选择你的 GitHub 账号。"
     Write-Host "   Repository access 选择 Only select repositories，并选择你 Fork 后的仓库。"
     Write-Host "   Repository permissions 设置 Actions: Read and write、Contents: Read-only。"
-    Write-Host "   点击 Generate token 后复制 github_pat_ 开头的令牌；不填则只能检查更新，不能网页触发更新。"
+    Write-Host "   点击 Generate token 后复制 github_pat_ 开头的令牌；不填则只能检查更新。"
+    Write-Host "3. 到你的 Fork 仓库点 Sync fork -> Update branch；前提是仓库已配置 Actions Secrets。"
 }
 function Convert-GitHubRepoInput([string]$Value) {
     $text = $Value.Trim().TrimEnd("/")
