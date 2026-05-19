@@ -20,7 +20,7 @@ EdgeOne Pages
 - 公共 API：`/api/status`
 - 管理 API：`/api/admin/*`
 - 魔方财务 API 检测、HTTP(S) 检测
-- TCP 端口检测在 EdgeOne 兼容模式下会降级为不可用提示
+- EdgeOne 版不能做原生 TCP 检测；请优先使用 HTTP(S) 检测或魔方财务 API 检测
 - 连续失败 3 次后自动重启或开机
 - pushplus / Webhook 通知
 
