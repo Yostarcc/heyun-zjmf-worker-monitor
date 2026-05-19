@@ -338,29 +338,47 @@ export async function handleRequest(request, env) {
     const body = await readJson(request);
     const provider = body?.provider || {};
     const server = body?.server || {};
+    const batchMode = Array.isArray(body?.providers) || Array.isArray(body?.servers);
+    const providers = batchMode ? (Array.isArray(body.providers) ? body.providers : []) : (provider.api_base_url || provider.api_account || provider.api_password || provider.name ? [provider] : []);
+    const servers = batchMode ? (Array.isArray(body.servers) ? body.servers : []) : (server.id || server.name || server.provider || server.http_url || server.tcp_host ? [server] : []);
     const missing = [];
-    if (!provider.api_base_url) missing.push('provider.api_base_url');
-    if (!provider.api_account) missing.push('provider.api_account');
-    if (!provider.api_password) missing.push('provider.api_password');
-    if (!server.id) missing.push('server.id');
+    const providerNames = new Set(providers.map((item) => item.name).filter(Boolean));
+    providers.forEach((item, index) => {
+      const prefix = batchMode ? `providers.${index}` : 'provider';
+      if (batchMode && !item.name) missing.push(`${prefix}.name`);
+      if (!item.api_base_url) missing.push(`${prefix}.api_base_url`);
+      if (!item.api_account) missing.push(`${prefix}.api_account`);
+      if (!item.api_password) missing.push(`${prefix}.api_password`);
+    });
+    servers.forEach((item, index) => {
+      const prefix = batchMode ? `servers.${index}` : 'server';
+      if (!item.id) missing.push(`${prefix}.id`);
+      if (batchMode && !item.provider) missing.push(`${prefix}.provider`);
+      if (batchMode && item.provider && !providerNames.has(item.provider)) missing.push(`${prefix}.provider`);
+    });
     if (missing.length) {
       return json({ error: 'INVALID_SETUP', message: '初始化信息不完整', missing }, 400);
     }
     const now = Math.floor(Date.now() / 1000);
-    const providerName = provider.name || 'heyunidc';
-    await repo.upsertProvider({ ...provider, name: providerName, display_name: provider.display_name || '核云' }, now);
-    await repo.upsertServer({
-      ...server,
-      name: server.name || `服务器 #${server.id}`,
-      provider: server.provider || providerName,
-      check_method: server.check_method || 'service_then_power',
-      enabled: true,
-      daily_reboot_limit: Number(server.daily_reboot_limit || 3),
-      probe_timeout_ms: Number(server.probe_timeout_ms || body.settings?.api_timeout_ms || 10000),
-    }, now);
+    const firstProvider = providers[0] || provider;
+    const firstServer = servers[0] || server;
+    for (const item of providers) {
+      await repo.upsertProvider({ ...item, name: item.name || firstProvider.name || 'heyunidc', display_name: item.display_name || '核云' }, now);
+    }
+    for (const item of servers) {
+      await repo.upsertServer({
+        ...item,
+        name: item.name || `服务器 #${item.id}`,
+        provider: item.provider || firstProvider.name || 'heyunidc',
+        check_method: item.check_method || 'service_then_power',
+        enabled: true,
+        daily_reboot_limit: Number(item.daily_reboot_limit || 3),
+        probe_timeout_ms: Number(item.probe_timeout_ms || body.settings?.api_timeout_ms || 10000),
+      }, now);
+    }
     await repo.setSetting('check_interval', Number(body.settings?.check_interval || 300));
     await repo.setSetting('api_timeout', Math.max(1, Math.ceil(Number(body.settings?.api_timeout_ms || 60000) / 1000)));
-    await repo.setSetting('default_daily_reboot_limit', Number(server.daily_reboot_limit || 3));
+    await repo.setSetting('default_daily_reboot_limit', Number(firstServer.daily_reboot_limit || 3));
     if (body.notification?.enabled) {
       await repo.setSetting('webhook_type', body.notification.type || 'pushplus');
       await repo.setSetting('webhook_url', body.notification.webhook_url || 'https://www.pushplus.plus/send');

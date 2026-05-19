@@ -23,6 +23,9 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.match(html, /上一步/);
   assert.match(html, /class="toplinks"[\s\S]*分析[\s\S]*状态页[\s\S]*退出登录/);
   assert.match(html, /自动获取产品列表/);
+  assert.match(html, /导入选中服务器/);
+  assert.match(html, /已导入服务器/);
+  assert.match(html, /可换账号重复导入/);
   assert.match(html, /魔方财务登录邮箱或手机号/);
   assert.match(html, /魔方财务产品 ID/);
   assert.match(html, /修改管理密码/);
