@@ -22,11 +22,23 @@
 5. 脚本会自动检查依赖、下载部署文件、生成配置并启动部署。
 6. 完成后按日志里的真实地址访问状态页和管理后台。
 
-### 方式二：EdgeOne Pages 复用现有仓库部署按钮
+### 方式二：EdgeOne Pages 复用现有仓库部署
 
-<a href="https://edgeone.ai/pages/new?repository-url=https%3A%2F%2Fgithub.com%2Floqwe%2Fheyun-zjmf-worker-monitor%2Ftree%2Fmain%2Fedgeone-pages&project-name=zjmf-monitor-edgeone&install-command=npm+install&build-command=npm+test&output-directory=.&env=ADMIN_TOKEN%2CZJMF_KV&env-description=这个按钮会复用现有的+GitHub+仓库+loqwe%2Fheyun-zjmf-worker-monitor+里的+edgeone-pages+目录；不是新建一个新的 GitHub 仓库。ADMIN_TOKEN+是管理后台初始密码；ZJMF_KV+是+EdgeOne+KV+绑定变量名。部署后还需要在+EdgeOne+Pages+项目中绑定+KV。&env-link=https%3A%2F%2Fpages.edgeone.ai%2Fzh%2Fdocument%2Fpages-kv-integration"><img alt="使用现有仓库部署到 EdgeOne" src="https://cdnstatic.tencentcs.com/edgeone/pages/deploy.svg"></a>
+不要使用 **Deploy to EdgeOne** 模板按钮；该按钮会进入“创建 Git 仓库”流程。复用现有仓库请在 EdgeOne Pages 控制台点击 **导入其它仓库**，选择 `loqwe/heyun-zjmf-worker-monitor`。
 
-说明：EdgeOne 版使用 KV 保存配置和事件，定时监控由外部定时器调用 `/api/admin/run`。这个按钮只是把现有 GitHub 仓库的 `edgeone-pages` 目录接入 EdgeOne Pages；首次部署后仍需在 EdgeOne 控制台绑定 KV 到变量名 `ZJMF_KV`。
+填写建议：
+
+| 配置项 | 填写 |
+|---|---|
+| 项目名称 | `zjmf-monitor-edgeone` |
+| Git 仓库 | `loqwe/heyun-zjmf-worker-monitor` |
+| 根目录 | `edgeone-pages` |
+| 安装命令 | `npm install` |
+| 构建命令 | `npm test` |
+| 输出目录 | `.` |
+| 环境变量 | `ADMIN_TOKEN=你的管理后台密码` |
+
+说明：EdgeOne 版使用 KV 保存配置和事件，定时监控由外部定时器调用 `/api/admin/run`。首次部署后仍需在 EdgeOne 控制台绑定 KV 到变量名 `ZJMF_KV`。
 
 详细说明见 `edgeone-pages/README.md`。
 
