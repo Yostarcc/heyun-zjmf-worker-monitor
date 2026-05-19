@@ -42,21 +42,7 @@ export async function checkHttpHealth({ server, fetcher }) {
 }
 
 async function defaultTcpConnector(host, port, timeout) {
-  const { connect } = await import('cloudflare:sockets');
-  const socket = connect({ hostname: host, port });
-  try {
-    await Promise.race([
-      socket.opened,
-      new Promise((_, reject) => setTimeout(() => reject(new Error('TCP 连接超时')), timeout)),
-    ]);
-    return true;
-  } finally {
-    try {
-      await socket.close();
-    } catch {
-      // 连接失败时 socket 可能已关闭。
-    }
-  }
+  throw new Error(`EdgeOne TCP connector 未注入：${host}:${port} (${timeout}ms)`);
 }
 
 export async function checkTcpHealth({ server, connector = defaultTcpConnector }) {
