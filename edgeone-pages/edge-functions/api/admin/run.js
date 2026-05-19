@@ -12,7 +12,10 @@ function resolveEdgeOneKv(env = {}) {
   return env.ZJMF_KV || env.KV || env.EDGEONE_KV;
 }
 
-export async function onRequest({ request, env = {} }) {
+export async function onRequest(context = {}) {
+  const env = context.env || {};
   const kv = resolveEdgeOneKv(env);
-  return handleEdgeOneRequest(request, mergeEdgeOneEnv({ ...env, ZJMF_KV: kv, KV: kv, EDGEONE_KV: kv }));
+  return handleEdgeOneRequest(context.request, mergeEdgeOneEnv({ ...env, ZJMF_KV: kv, KV: kv, EDGEONE_KV: kv }));
 }
+
+export default onRequest;
