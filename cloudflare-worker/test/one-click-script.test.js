@@ -24,6 +24,13 @@ test('步骤1脚本写明 GitHub 仓库地址并复用为下载源', () => {
   assert.match(installer, /raw\.githubusercontent\.com/);
 });
 
+test('步骤2一键部署默认刷新源码缓存，避免部署旧版本', () => {
+  const deployer = readUtf8('步骤2-一键部署.bat');
+
+  assert.match(deployer, /deploy-one-click\.ps1/);
+  assert.match(deployer, /-Interactive -RefreshSource/);
+});
+
 test('文档里的步骤1下载入口使用 main 分支 raw 直链', () => {
   const rootReadme = readFileSync(path.join(repoRoot, 'README.md'), 'utf8');
   const workerReadme = readFileSync(path.join(repoRoot, 'cloudflare-worker', 'README.md'), 'utf8');

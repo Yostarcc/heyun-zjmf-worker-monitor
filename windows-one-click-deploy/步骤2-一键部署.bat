@@ -33,7 +33,7 @@ if /I "%~1"=="--self-test" (
   exit /b %ERRORLEVEL%
 )
 
-"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File ".\deploy-one-click.ps1" -ConfigPath ".\one-click.config.jsonc" -Interactive
+"%PS_EXE%" -NoProfile -ExecutionPolicy Bypass -File ".\deploy-one-click.ps1" -ConfigPath ".\one-click.config.jsonc" -Interactive -RefreshSource
 set "SCRIPT_EXIT=%ERRORLEVEL%"
 echo.
 if not "%SCRIPT_EXIT%"=="0" (
