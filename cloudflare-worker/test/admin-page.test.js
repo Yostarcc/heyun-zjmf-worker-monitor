@@ -161,15 +161,15 @@ test('管理后台页面使用 ZJMF_ADMIN_TOKEN 登录且不嵌入真实密码',
   assert.doesNotMatch(html, /维护策略|maintenanceView|data-tab="maintenance"/);
   assert.match(html, /<option value="service_then_power" selected>/);
   assert.match(html, /通知开关/);
-  assert.match(html, /支持的通知渠道/);
-  assert.match(html, /保存后到“通知”页点测试通知/);
+  assert.doesNotMatch(html, /支持的通知渠道/);
+  assert.match(html, /README\.md/);
   assert.match(html, /失败阶段静默/);
   assert.match(html, /name="notify_failure_silence"/);
   assert.match(html, /不勾选时，检测异常\/确认宕机会通知/);
   assert.match(html, /notify_failure_silence:false/);
   assert.match(html, /notify_failure_silence:b\.notify_failure_silence==='on'/);
   assert.doesNotMatch(html, /name="notify_failure_threshold"/);
-  assert.match(html, /卡片式通知设置/);
+  assert.match(html, /这里仅填写通知配置/);
   assert.match(html, /<option value="bark">Bark/);
   assert.match(html, /<option value="telegram">Telegram/);
   assert.match(html, /<option value="feishu">飞书机器人/);

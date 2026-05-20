@@ -108,8 +108,8 @@ test('管理初始化弹窗支持滚动显示完整内容', async () => {
   assert.match(html, /HTTP\(S\) \+ TCP \+ API<\/option>/);
   assert.match(html, /统计窗口/);
   assert.match(html, /<option value="hour" selected>每小时/);
-  assert.match(html, /支持的通知渠道/);
-  assert.match(html, /保存后到“通知”页点测试通知/);
+  assert.doesNotMatch(html, /支持的通知渠道/);
+  assert.match(html, /README\.md/);
   assert.match(html, /<option value="bark">Bark/);
   assert.match(html, /<option value="telegram">Telegram/);
   assert.match(html, /<option value="feishu">飞书机器人/);
