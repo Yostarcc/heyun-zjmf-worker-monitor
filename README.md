@@ -45,8 +45,7 @@
 | 输出目录 | `.` |
 | 构建命令 | `npm test` |
 | 安装命令 | `npm install` |
-| 环境变量 | 变量名 `ADMIN_TOKEN`，值 `admin` |
-| KV 绑定变量 | 变量名 `ZJMF_KV`，值 `ZJMF_KV` |
+| 环境变量 / KV 绑定变量 | 变量名 `ADMIN_TOKEN`，值 `admin`；变量名 `ZJMF_KV`，值 `ZJMF_KV` |
 
 KV 绑定：打开 **KV 存储**，变量名填 `ZJMF_KV`，值选择或创建 `ZJMF_KV`。如果还没有命名空间，先点击 **创建命名空间**。
 
